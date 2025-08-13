@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colorful Doodle Pad</title>
+<style>
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: Arial, sans-serif;
+  }
+  h1 {
+    color: #333;
+    margin: 10px;
+  }
+  canvas {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    touch-action: none;
+  }
+  .controls {
+    margin: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button, input[type="color"], input[type="range"] {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button {
+    background: #333;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎨 Colorful Doodle Pad</h1>
+
+<div class="controls">
+  <!-- MS Paint style color picker -->
+  <label>🎨 Color:
+    <input type="color" id="colorPicker" value="#000000">
+  </label>
+
+  <!-- Brush size -->
+  <label>🖌 Size: 
+    <input type="range" id="brushSize" min="1" max="20" value="5">
+  </label>
+
+  <button onclick="undo()">↩ Undo</button>
+  <button onclick="redo()">↪ Redo</button>
+  <button onclick="clearCanvas()">🧹 Clear</button>
+  <button onclick="saveImage()">💾 Save</button>
+</div>
+
+<canvas id="canvas" width="500" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let painting = false;
+let brushColor = document.getElementById('colorPicker').value;
+let brushWidth = document.getElementById('brushSize').value;
+
+let undoStack = [];
+let redoStack = [];
+
+document.getElementById('colorPicker').addEventListener('input', e => {
+  brushColor = e.target.value;
+});
+document.getElementById('brushSize').addEventListener('input', e => {
+  brushWidth = e.target.value;
+});
+
+// Mouse events
+canvas.addEventListener('mousedown', e => { saveState(); startDraw(e); });
+canvas.addEventListener('mouseup', stopDraw);
+canvas.addEventListener('mousemove', draw);
+
+// Touch events (mobile)
+canvas.addEventListener('touchstart', e => { saveState(); startDraw(e.touches[0]); });
+canvas.addEventListener('touchend', stopDraw);
+canvas.addEventListener('touchmove', e => {
+  draw(e.touches[0]);
+  e.preventDefault();
+});
+
+function startDraw(e) {
+  painting = true;
+  draw(e);
+}
+function stopDraw() {
+  painting = false;
+  ctx.beginPath();
+}
+function draw(e) {
+  if (!painting) return;
+  const rect = canvas.getBoundingClientRect();
+  ctx.lineWidth = brushWidth;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = brushColor;
+  ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+}
+function clearCanvas() {
+  saveState();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+function saveImage() {
+  const link = document.createElement('a');
+  link.download = 'doodle.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+// ---- Undo/Redo ----
+function saveState() {
+  undoStack.push(canvas.toDataURL());
+  redoStack = [];
+}
+function undo() {
+  if (undoStack.length > 0) {
+    redoStack.push(canvas.toDataURL());
+    let imgData = undoStack.pop();
+    let img = new Image();
+    img.src = imgData;
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+    };
+  }
+}
+function redo() {
+  if (redoStack.length > 0) {
+    undoStack.push(canvas.toDataURL());
+    let imgData = redoStack.pop();
+    let img = new Image();
+    img.src = imgData;
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+    };
+  }
+}
+</script>
+
+</body>
+</html>
+
+
+
+
+
